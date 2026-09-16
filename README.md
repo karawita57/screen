@@ -1,8 +1,51 @@
-﻿# Informe Técnico y Análisis de Funcionamiento: NICE Screen Agent
+# Auditor de Privacidad y Grabaciones - NICE Screen Agent
+
+Herramienta de auditoría local, preservación y desencriptación en tiempo real de las grabaciones de pantalla generadas por **NICE Screen Agent**, acompañada del informe técnico sobre su arquitectura y funcionamiento.
+
+---
+
+## 🚀 ¿Qué hace `ejecutar_auditor.bat`?
+
+`ejecutar_auditor.bat` es el lanzador principal del sistema de auditoría para Windows. Permite iniciar todo el entorno de monitoreo con un solo doble clic sin necesidad de abrir consolas manualmente ni configurar permisos de PowerShell.
+
+### Funciones Principales:
+
+1. **Lanzamiento con un solo clic:**
+   * Abre una ventana de consola dedicada titulada `Auditor de Privacidad - ScreenAgent`.
+   * Ejecuta el script principal [`iniciar_auditor.ps1`](file:///c:/Proyects/screen/iniciar_auditor.ps1) evadiendo restricciones de políticas de ejecución (`-ExecutionPolicy Bypass -NoProfile`).
+   * Mantiene la ventana abierta en caso de detención o error para permitir revisar los registros (`pause`).
+
+2. **Monitoreo y Detección en Tiempo Real:**
+   * Supervisa en segundo plano el inicio de grabaciones por parte de `ScreenAgent` detectando automáticamente la creación del proceso `ffmpeg.exe` asociado a la llamada.
+
+3. **Captura de Claves Criptográficas al Vuelo (AES-128):**
+   * ScreenAgent cifra cada grabación con una clave única temporal antes de guardarla en el disco.
+   * El script intercepta los argumentos de la línea de comandos de FFmpeg en el instante en que se crea el proceso, extrayendo la clave secreta (`-encryption_key`) y el vector de inicialización (`-encryption_iv`).
+
+4. **Preservación Inmediata mediante Enlaces Duros (HardLinks):**
+   * Por diseño, ScreenAgent elimina el video local inmediatamente después de subirlo exitosamente a la nube de AWS S3.
+   * El auditor crea instantáneamente un enlace duro (*HardLink*) apuntando al archivo en la carpeta `auditoria\temp\`. De esta manera, cuando ScreenAgent borra el archivo de su carpeta temporal, la copia física en disco permanece intacta.
+
+5. **Desencriptación Automática y Entrega de Video Reproducible:**
+   * Una vez que la llamada concluye, el auditor utiliza el propio binario local de FFmpeg junto con la clave capturada para desencriptar el video.
+   * Genera un archivo `.mp4` limpio, listo para reproducir en cualquier reproductor (como VLC o Windows Media Player) y lo guarda ordenadamente en la carpeta `auditoria\`.
+
+6. **Registro y Telemetría Local:**
+   * Notifica en consola la hora exacta de inicio y fin de cada llamada, duración, ID de grabación, resolución capturada y ruta final del video generado.
+
+### 📋 Modo de Uso Rápido:
+1. Haz doble clic en [`ejecutar_auditor.bat`](file:///c:/Proyects/screen/ejecutar_auditor.bat).
+2. Deja la ventana abierta mientras realizas tus llamadas de trabajo.
+3. Las grabaciones desencriptadas se guardarán automáticamente en la carpeta `auditoria\`.
+4. Para detener el auditor, presiona `Ctrl + C` en la ventana de consola.
+
+---
+
+# Informe Técnico y Análisis de Funcionamiento: NICE Screen Agent
 
 **Fecha de análisis:** Septiembre 2026  
 **Sistema Operativo:** Windows 10 Home (64-bit)  
-**Ubicación de este informe:** `C:\Proyects\screen\informe_tecnico_nice_screen_agent.md`
+**Ubicación de este informe:** [`informe_tecnico_nice_screen_agent.md`](file:///c:/Proyects/screen/informe_tecnico_nice_screen_agent.md)
 
 ---
 
