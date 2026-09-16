@@ -1,8 +1,8 @@
-﻿# Informe Técnico y Análisis de Funcionamiento: NICE Screen Agent
+# Informe Técnico y Análisis de Funcionamiento: NICE Screen Agent
 
 **Fecha de análisis:** Septiembre 2026  
-**Sistema Operativo:** Windows 10 Home (64-bit)  
-**Ubicación de este informe:** `C:\Proyects\screen\informe_tecnico_nice_screen_agent.md`
+**Sistema Operativo:** Windows 10 / Windows 11 (64-bit)  
+**Documento:** `informe_tecnico_nice_screen_agent.md`
 
 ---
 
@@ -15,21 +15,21 @@
 | **Versión del Producto** | `3.2.12` |
 | **Versión de Electron** | `26.3.0` |
 | **Motor de Captura de Video** | FFmpeg personalizado (`gdigrab` en Windows) |
-| **Fecha de Instalación** | 03 de Septiembre de 2026 |
+| **Fecha de Instalación** | Septiembre de 2026 |
 | **Cadena de Desinstalación** | `MsiExec.exe /I{5A99BBA1-06E2-46C2-AF68-3142903F6161}` |
 
 ---
 
 ## 2. Organización y Cuenta Vinculada (Tenant)
 
-A través de los archivos de configuración y la telemetría enviada a AWS, se identificaron los parámetros exactos de vinculación institucional:
+A través de los archivos de configuración y la telemetría enviada a la nube, se identificaron los parámetros estructurales de vinculación institucional:
 
-* **Organización (Tenant):** `certified_languages_internationa99779533` (*Certified Languages International*)
-* **ID de Tenant:** `11ef6a32-c573-6d80-b014-0242ac110004`
+* **Organización (Tenant):** `organizacion_ejemplo_99779533` (*Empresa de Servicios / Contact Center*)
+* **ID de Tenant:** `11ef6a32-xxxx-xxxx-xxxx-xxxxxxxxxxxx`
 * **Entorno / Región de Servicio:** `na1` (`https://na1.nice-incontact.com/screen-agent`)
 * **Endpoint de Autenticación:** `https://cxone.niceincontact.com/auth/token`
-* **Identificador TACK de Sesión:** `11f1a0c8-dd49-54f0-8451-0242ac110004`
-* **Estación de Trabajo / Usuario:** `DESKTOP-NB9HN1I \ estefano`
+* **Identificador TACK de Sesión:** `11f1a0c8-xxxx-xxxx-xxxx-xxxxxxxxxxxx`
+* **Estación de Trabajo / Usuario:** `ESTACION-TRABAJO-01 \ usuario`
 
 ---
 
@@ -52,8 +52,8 @@ Puerto Local 31322     ffmpeg.exe (gdigrab)
 (Escucha MAX/CXone)    (Captura de pantalla y codificación)
                             │
                             ▼
-                     Subida a AWS S3
-           (production-us-west-2-screen-recording-bucket)
+                      Subida a AWS S3
+            (production-screen-recording-bucket)
 ```
 
 ### Rutas en el Disco
@@ -64,7 +64,7 @@ Puerto Local 31322     ffmpeg.exe (gdigrab)
   * `ffmpeg.exe`: Binario dedicado para capturar y codificar el video de pantalla.
   * `resources\app.asar`: Archivo empaquetado que contiene toda la lógica JavaScript/Node.js de la aplicación.
 * **Archivos de configuración y datos de usuario:**  
-  `C:\Users\estefano\AppData\Roaming\ScreenAgent\`
+  `C:\Users\<usuario>\AppData\Roaming\ScreenAgent\`
   * `config.json`: Configuración local de endpoints, puertos y parámetros de captura.
   * `configFile.ini`: Credenciales y claves de acceso criptográficas fijas.
   * `logs\ScreenAgent.log`: Registro cronológico detallado de todos los eventos del programa.
@@ -139,11 +139,11 @@ Una de las principales dudas técnicas resueltas fue la administración de las l
 * **Comportamiento ante caídas de red:** Si se corta el internet al colgar, el video se almacena en la carpeta local y entra en una cola de reintentos (`retryOnUploadFailureInMS: 600000`). En cuanto regresa la conexión, se suben los archivos pendientes y se eliminan del disco.
 
 ### B. Registros (Logs) y Telemetría Técnica
-* **Eventos de Pulso (`PULSE`):** Se transmiten periódicamente hacia la cola SQS `production_mcr-connected-screen-agents-sqs` para confirmar que tu estación sigue conectada.
+* **Eventos de Pulso (`PULSE`):** Se transmiten periódicamente hacia la cola SQS (`production_mcr-connected-screen-agents-sqs`) para confirmar que tu estación sigue conectada.
 * **Subida de Logs (`ScreenAgent.zip`):**
   * Se sube cada vez que el equipo arranca o se reinicia la aplicación.
   * Por tamaño: Cada vez que `ScreenAgent.log` alcanza **5 MB** (`5242880 bytes`).
-  * Por temporizador: Cada vez que se renuevan las credenciales STS de AWS (en tu log el temporizador `credentialsRefreshTimer` está programado para **24,900,164 ms**, es decir, **cada ~6.9 horas**).
+  * Por temporizador: Cada vez que se renuevan las credenciales STS de AWS (programado en el temporizador `credentialsRefreshTimer` para **cada ~6.9 horas**).
 * **Refresco de Políticas (`Settings`):** Se consulta cada **12 horas** (`43200000 ms`).
 
 ---
@@ -152,32 +152,32 @@ Una de las principales dudas técnicas resueltas fue la administración de las l
 
 * **Puerto Local (Loopback):** Escucha en `127.0.0.1:31322`. Se utiliza como puente para que la interfaz web del agente (CXone Agent / MAX) se comunique con la aplicación de escritorio y le ordene iniciar/detener la grabación.
 * **Conexiones Salientes Establecidas:**
-  * **AWS us-west-2 (Oregón):** Conexión HTTPS segura (`Puerto 443`) para el almacenamiento de grabaciones en el bucket S3 `production-us-west-2-screen-recording-bucket` y el envío de mensajes por SQS.
-  * **Cloudflare Edge (`172.64.41.3:443`):** Red de distribución para la carga de componentes estáticos y API de NICE.
+  * **AWS Cloud:** Conexión HTTPS segura (`Puerto 443`) para el almacenamiento de grabaciones en el bucket S3 corporativo y el envío de mensajes por SQS.
+  * **Cloudflare Edge (`Puerto 443`):** Red de distribución para la carga de componentes estáticos y API de NICE.
 
 ---
 
-## 8. Evidencia Real de Grabaciones en tu Equipo
+## 8. Evidencia y Casos de Prueba Registrados
 
-En los registros del sistema se documentó la captura de llamadas con los siguientes datos verificables:
+En los registros del sistema se documentó la captura de llamadas con los siguientes datos de ejemplo:
 
-### Interacción 1 (04/09/2026 - 09:42 AM)
-* **Inicio de grabación:** `09:42:42` (hora local)
-* **Fin de grabación:** `09:43:07` (duración: 25 segundos)
-* **ID de Grabación:** `32da5e71-fdf7-42d8-9be1-52058a6766d9`
-* **Archivo generado:** `1788532962729_000.mp4`
-* **Tamaño:** 327,481 bytes (~320 KB)
+### Interacción 1 (Ejemplo de llamada corta)
+* **Inicio de grabación:** `10:15:00` (hora local)
+* **Fin de grabación:** `10:15:25` (duración: 25 segundos)
+* **ID de Grabación:** `a1b2c3d4-e5f6-7890-abcd-ef1234567890`
+* **Archivo generado:** `1788500000000_000.mp4`
+* **Tamaño:** ~320 KB
 * **Resolución:** `1920x1080` a 5 FPS
-* **Resultado de subida:** `HTTP 200 OK` confirmado a las `09:43:09` (tiempo de subida: ~1.4 s). Archivo local eliminado.
+* **Resultado de subida:** `HTTP 200 OK` confirmado a las `10:15:27` (tiempo de subida: ~2 s). Archivo local eliminado.
 
-### Interacción 2 (04/09/2026 - 09:54 AM)
-* **Inicio de grabación:** `09:54:23` (hora local)
-* **Fin de grabación:** `09:55:01` (duración: 38 segundos)
-* **ID de Grabación:** `d45025ec-c2ce-475f-94d4-1a68c038719e`
-* **Archivo generado:** `1788533663585_000.mp4`
-* **Tamaño:** 533,187 bytes (~520 KB)
+### Interacción 2 (Ejemplo de llamada estándar)
+* **Inicio de grabación:** `10:30:00` (hora local)
+* **Fin de grabación:** `10:30:38` (duración: 38 segundos)
+* **ID de Grabación:** `b2c3d4e5-f6a7-8901-bcde-f12345678901`
+* **Archivo generado:** `1788500060000_000.mp4`
+* **Tamaño:** ~520 KB
 * **Resolución:** `1920x1080` a 5 FPS
-* **Resultado de subida:** `HTTP 200 OK` confirmado a las `09:55:03` (tiempo de subida: ~1.6 s). Archivo local eliminado.
+* **Resultado de subida:** `HTTP 200 OK` confirmado a las `10:30:40` (tiempo de subida: ~2 s). Archivo local eliminado.
 
 ---
 

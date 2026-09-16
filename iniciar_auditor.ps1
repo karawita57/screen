@@ -8,14 +8,40 @@
 
 [CmdletBinding()]
 param(
-    [string]$OutputDir = "C:\Proyects\screen\auditoria",
-    [string]$FFmpegPath = "C:\Program Files\NICE-InContact\ScreenAgent\ffmpeg.exe",
-    [string]$RecordingsDir = "C:\Users\estefano\AppData\Roaming\ScreenAgent\recordings"
+    [string]$OutputDir = "",
+    [string]$FFmpegPath = "C:\Program Files\NICE-InContact\ScreenAgent\ffmpeg.exe"
 )
 
 # Configurar codificacion de consola
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 $Host.UI.RawUI.WindowTitle = "Auditor de Privacidad - ScreenAgent"
+
+# Si OutputDir no fue especificado, usar la carpeta 'auditoria' en el directorio del script
+if ([string]::IsNullOrWhiteSpace($OutputDir)) {
+    $OutputDir = Join-Path $PSScriptRoot "auditoria"
+}
+
+# Validar existencia de FFmpeg
+if (-not (Test-Path $FFmpegPath)) {
+    $fallbackFfmpeg = Get-Command ffmpeg.exe -ErrorAction SilentlyContinue
+    if ($fallbackFfmpeg) {
+        $FFmpegPath = $fallbackFfmpeg.Source
+    } else {
+        Write-Host "`n[ERROR] No se encontro el motor FFmpeg en: $FFmpegPath" -ForegroundColor Red
+        Write-Host "NICE ScreenAgent instala FFmpeg en esa ruta por defecto. Verifica la instalacion." -ForegroundColor Red
+        return
+    }
+}
+
+# Advertir si el proyecto no esta en el disco C: (HardLinks de NTFS no cruzan discos)
+$resolvedPath = if (Test-Path $OutputDir) { (Resolve-Path $OutputDir).Path } else { $OutputDir }
+$outputDrive = [System.IO.Path]::GetPathRoot($resolvedPath)
+if ($outputDrive -notmatch "^[Cc]:") {
+    Write-Host "`n[ADVERTENCIA] El repositorio esta en la unidad $outputDrive." -ForegroundColor Yellow
+    Write-Host "ScreenAgent guarda sus grabaciones temporales en el disco C: (AppData)." -ForegroundColor Yellow
+    Write-Host "Los enlaces duros (HardLinks) de Windows no funcionan entre diferentes discos." -ForegroundColor Yellow
+    Write-Host "Por favor, clona y ejecuta este repositorio exclusivamente en el disco C:\`n" -ForegroundColor Yellow
+}
 
 # Asegurar directorios
 $tempDir = Join-Path $OutputDir "temp"
@@ -27,7 +53,6 @@ Write-Host "           AUDITOR DE PRIVACIDAD - NICE SCREEN AGENT             " -
 Write-Host "=================================================================" -ForegroundColor Cyan
 Write-Host "Directorio de auditoria : $OutputDir" -ForegroundColor Yellow
 Write-Host "Motor FFmpeg local      : $FFmpegPath" -ForegroundColor Yellow
-Write-Host "Carpeta de grabaciones  : $RecordingsDir" -ForegroundColor Yellow
 Write-Host "Estado                  : ESCUCHANDO (Esperando inicio de llamada...)" -ForegroundColor Green
 Write-Host "Presiona Ctrl + C para detener el auditor en cualquier momento." -ForegroundColor Gray
 Write-Host "=================================================================`n" -ForegroundColor Cyan
@@ -73,10 +98,10 @@ try {
                         $encKid = $Matches[1]
                     }
 
-                    # Extraer carpeta de destino de la grabacion
+                    # Extraer carpeta de destino de la grabacion (soporta rutas con espacios y comillas)
                     $targetFolder = ""
-                    if ($cmd -match '([A-Za-z]:\\[^" ]+\\recordings\\[a-fA-F0-9-]+)') {
-                        $targetFolder = $Matches[1]
+                    if ($cmd -match '([A-Za-z]:\\[^"\r\n]+?\\recordings\\[a-fA-F0-9-]+)') {
+                        $targetFolder = $Matches[1].Trim()
                     }
 
                     $sessionTime = Get-Date
