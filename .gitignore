@@ -1,0 +1,17 @@
+﻿# Grabaciones y archivos generados por la auditoría
+auditoria/*
+!auditoria/.gitkeep
+*.mp4
+*.mkv
+*.wav
+*.key
+*.bin
+*.log
+
+# Archivos de sistema y entorno
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.tmp
+.temp/
